@@ -14,7 +14,7 @@
   "include": [
     "**/*.ts",
     "**/*.tsx"
-  ],
+, "constants/Config.ts.bak"  ],
   "ts-node": {
     "transpileOnly": true,
     "compilerOptions": {

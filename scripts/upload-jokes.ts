@@ -2,26 +2,9 @@ import { createClient } from '@supabase/supabase-js';
 import { Database } from '../types/supabase';
 import fs from 'fs';
 import path from 'path';
-import dotenv from 'dotenv';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../constants/Config.ts.bak';
 
-// טעינת משתני הסביבה מקובץ .env באופן מפורש
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
-
-// הדפסת משתני הסביבה לדיבוג
-console.log('Environment variables:', {
-  supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
-  hasAnonKey: !!process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
-});
-
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Environment variables not found in:', path.resolve(__dirname, '../.env'));
-  throw new Error('Missing Supabase environment variables. Please check your .env file');
-}
-
-const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 async function uploadJokes() {
   try {
