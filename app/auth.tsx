@@ -8,18 +8,50 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { supabase } from '@/lib/supabase';
 
+const ERROR_MESSAGES: { [key: string]: string } = {
+  'Invalid login credentials': 'פרטי התחברות שגויים',
+  'Email not confirmed': 'המייל טרם אומת. אנא בדוק את תיבת המייל שלך',
+  'Password should be at least 6 characters': 'הסיסמה חייבת להכיל לפחות 6 תווים',
+  'User already registered': 'משתמש עם מייל זה כבר קיים במערכת',
+  'Invalid email': 'כתובת המייל אינה תקינה',
+};
+
 export default function AuthScreen() {
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const validateForm = () => {
+    setError(null);
+    
+    if (!email || !password) {
+      setError('נא למלא את כל השדות');
+      return false;
+    }
+    
+    if (!email.includes('@')) {
+      setError('כתובת המייל אינה תקינה');
+      return false;
+    }
+    
+    if (password.length < 6) {
+      setError('הסיסמה חייבת להכיל לפחות 6 תווים');
+      return false;
+    }
+    
+    if (!isLogin && !username) {
+      setError('נא להזין שם משתמש');
+      return false;
+    }
+
+    return true;
+  };
 
   const handleSubmit = async () => {
-    if (!email || !password || (!isLogin && !username)) {
-      Alert.alert('שגיאה', 'נא למלא את כל השדות');
-      return;
-    }
+    if (!validateForm()) return;
 
     setIsLoading(true);
     try {
@@ -29,6 +61,7 @@ export default function AuthScreen() {
           password,
         });
         if (error) throw error;
+        router.replace('/(tabs)');
       } else {
         const { error } = await supabase.auth.signUp({
           email,
@@ -40,14 +73,20 @@ export default function AuthScreen() {
           },
         });
         if (error) throw error;
+        
+        setEmail('');
+        setPassword('');
+        setUsername('');
+        setIsLogin(true);
         Alert.alert(
-          'אימות נדרש',
-          'נשלח אליך מייל אימות. אנא אמת את המייל שלך כדי להמשיך'
+          'הרשמה הצליחה!',
+          'נשלח אליך מייל אימות. אנא אמת את המייל שלך והתחבר.',
+          [{ text: 'אישור' }]
         );
       }
     } catch (error) {
       const authError = error as AuthError;
-      Alert.alert('שגיאה', authError?.message || 'אירעה שגיאה לא צפויה');
+      setError(ERROR_MESSAGES[authError.message] || 'אירעה שגיאה. אנא נסה שוב');
     } finally {
       setIsLoading(false);
     }
@@ -60,12 +99,21 @@ export default function AuthScreen() {
           {isLogin ? 'ברוכים השבים!' : 'הרשמה'}
         </ThemedText>
         
+        {error && (
+          <ThemedText style={styles.errorText}>
+            {error}
+          </ThemedText>
+        )}
+        
         <TextInput
-          style={styles.input}
+          style={[styles.input, error && styles.inputError]}
           placeholder="אימייל"
           placeholderTextColor="#666"
           value={email}
-          onChangeText={setEmail}
+          onChangeText={(text) => {
+            setEmail(text);
+            setError(null);
+          }}
           keyboardType="email-address"
           autoCapitalize="none"
           editable={!isLoading}
@@ -73,22 +121,28 @@ export default function AuthScreen() {
 
         {!isLogin && (
           <TextInput
-            style={styles.input}
+            style={[styles.input, error && styles.inputError]}
             placeholder="שם משתמש"
             placeholderTextColor="#666"
             value={username}
-            onChangeText={setUsername}
+            onChangeText={(text) => {
+              setUsername(text);
+              setError(null);
+            }}
             autoCapitalize="none"
             editable={!isLoading}
           />
         )}
 
         <TextInput
-          style={styles.input}
+          style={[styles.input, error && styles.inputError]}
           placeholder="סיסמה"
           placeholderTextColor="#666"
           value={password}
-          onChangeText={setPassword}
+          onChangeText={(text) => {
+            setPassword(text);
+            setError(null);
+          }}
           secureTextEntry
           editable={!isLoading}
         />
@@ -107,7 +161,13 @@ export default function AuthScreen() {
           )}
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => setIsLogin(!isLogin)} disabled={isLoading}>
+        <TouchableOpacity 
+          onPress={() => {
+            setIsLogin(!isLogin);
+            setError(null);
+          }} 
+          disabled={isLoading}
+        >
           <ThemedText style={styles.switchText}>
             {isLogin ? 'אין לך חשבון? הירשם' : 'יש לך חשבון? התחבר'}
           </ThemedText>
@@ -161,5 +221,14 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.7,
+  },
+  errorText: {
+    color: '#ff4444',
+    textAlign: 'center',
+    marginBottom: 16,
+    fontSize: 14,
+  },
+  inputError: {
+    borderColor: '#ff4444',
   },
 }); 

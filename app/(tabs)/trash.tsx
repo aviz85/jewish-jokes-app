@@ -1,36 +1,33 @@
-import { useEffect, useState } from 'react';
-import { FlatList, StyleSheet } from 'react-native';
-import { router } from 'expo-router';
-
+import { useState, useEffect } from 'react';
+import { StyleSheet, FlatList } from 'react-native';
 import { ThemedView } from '@/components/ThemedView';
-import { ThemedText } from '@/components/ThemedText';
 import { JokeCard } from '@/components/JokeCard';
 import { supabase } from '@/lib/supabase';
 import type { Database } from '@/types/supabase';
+import { router } from 'expo-router';
 
 type Joke = Database['public']['Tables']['jokes']['Row'];
 
-export default function HomeScreen() {
+export default function TrashScreen() {
   const [jokes, setJokes] = useState<Joke[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadJokes();
+    loadDeletedJokes();
   }, []);
 
-  async function loadJokes() {
+  async function loadDeletedJokes() {
     try {
       const { data, error } = await supabase
         .from('jokes')
         .select('*')
-        .neq('status', 'deleted')
-        .order('created_at', { ascending: false })
-        .limit(20);
+        .eq('status', 'deleted')
+        .order('updated_at', { ascending: false });
 
       if (error) throw error;
       setJokes(data || []);
     } catch (error) {
-      console.error('Error loading jokes:', error);
+      console.error('Error loading deleted jokes:', error);
     } finally {
       setLoading(false);
     }
@@ -38,23 +35,19 @@ export default function HomeScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ThemedText type="title" style={styles.header}>
-        בדיחות יהודיות
-      </ThemedText>
       <FlatList
         data={jokes}
         renderItem={({ item }) => (
           <JokeCard
             joke={item}
             onPress={() => router.push(`/joke/${item.id}`)}
-            onRefresh={loadJokes}
+            onRefresh={loadDeletedJokes}
+            isInTrash
           />
         )}
         keyExtractor={(item) => item.id.toString()}
         refreshing={loading}
-        onRefresh={loadJokes}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.listContent}
+        onRefresh={loadDeletedJokes}
       />
     </ThemedView>
   );
@@ -63,15 +56,6 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    fontSize: 28,
-    textAlign: 'center',
-    marginVertical: 16,
-    fontWeight: 'bold',
-  },
-  listContent: {
     padding: 16,
-    paddingTop: 0,
   },
-});
+}); 

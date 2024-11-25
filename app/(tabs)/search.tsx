@@ -1,36 +1,38 @@
-import { useEffect, useState } from 'react';
-import { FlatList, StyleSheet } from 'react-native';
-import { router } from 'expo-router';
-
+import { useState } from 'react';
+import { StyleSheet, TextInput, FlatList } from 'react-native';
 import { ThemedView } from '@/components/ThemedView';
-import { ThemedText } from '@/components/ThemedText';
 import { JokeCard } from '@/components/JokeCard';
 import { supabase } from '@/lib/supabase';
 import type { Database } from '@/types/supabase';
+import { router } from 'expo-router';
 
 type Joke = Database['public']['Tables']['jokes']['Row'];
 
-export default function HomeScreen() {
+export default function SearchScreen() {
+  const [searchQuery, setSearchQuery] = useState('');
   const [jokes, setJokes] = useState<Joke[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    loadJokes();
-  }, []);
+  async function handleSearch(query: string) {
+    setSearchQuery(query);
+    if (query.length < 2) {
+      setJokes([]);
+      return;
+    }
 
-  async function loadJokes() {
+    setLoading(true);
     try {
       const { data, error } = await supabase
         .from('jokes')
         .select('*')
         .neq('status', 'deleted')
-        .order('created_at', { ascending: false })
+        .ilike('original', `%${query}%`)
         .limit(20);
 
       if (error) throw error;
       setJokes(data || []);
     } catch (error) {
-      console.error('Error loading jokes:', error);
+      console.error('Error searching jokes:', error);
     } finally {
       setLoading(false);
     }
@@ -38,23 +40,24 @@ export default function HomeScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ThemedText type="title" style={styles.header}>
-        בדיחות יהודיות
-      </ThemedText>
+      <TextInput
+        style={styles.searchInput}
+        placeholder="חפש בדיחה..."
+        value={searchQuery}
+        onChangeText={handleSearch}
+        placeholderTextColor="#666"
+      />
       <FlatList
         data={jokes}
         renderItem={({ item }) => (
           <JokeCard
             joke={item}
             onPress={() => router.push(`/joke/${item.id}`)}
-            onRefresh={loadJokes}
+            onRefresh={() => handleSearch(searchQuery)}
           />
         )}
         keyExtractor={(item) => item.id.toString()}
         refreshing={loading}
-        onRefresh={loadJokes}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.listContent}
       />
     </ThemedView>
   );
@@ -63,15 +66,16 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    fontSize: 28,
-    textAlign: 'center',
-    marginVertical: 16,
-    fontWeight: 'bold',
-  },
-  listContent: {
     padding: 16,
-    paddingTop: 0,
   },
-});
+  searchInput: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 8,
+    padding: 15,
+    marginBottom: 16,
+    color: '#fff',
+    textAlign: 'right',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+}); 

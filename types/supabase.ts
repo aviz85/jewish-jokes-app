@@ -9,24 +9,61 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
-      users: {
+      jokes: {
         Row: {
-          id: string
-          username: string
-          email: string
+          id: number
+          original: string
+          status: 'pending' | 'completed' | 'deleted'
+          rating: number
+          likes: number
+          dislikes: number
+          tags: string[]
           created_at: string
+          updated_at: string
         }
         Insert: {
-          id?: string
-          username: string
-          email: string
+          id: number
+          original: string
+          status?: 'pending' | 'completed' | 'deleted'
+          rating?: number
+          likes?: number
+          dislikes?: number
+          tags?: string[]
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          original?: string
+          status?: 'pending' | 'completed' | 'deleted'
+          rating?: number
+          likes?: number
+          dislikes?: number
+          tags?: string[]
+          updated_at?: string
+        }
+      }
+      joke_versions: {
+        Row: {
+          id: number
+          joke_id: number
+          text: string
+          type: string
+          timestamp: string
+          created_at?: string
+        }
+        Insert: {
+          id?: number
+          joke_id: number
+          text: string
+          type: string
+          timestamp: string
           created_at?: string
         }
         Update: {
-          id?: string
-          username?: string
-          email?: string
-          created_at?: string
+          joke_id?: number
+          text?: string
+          type?: string
+          timestamp?: string
         }
       }
     }
